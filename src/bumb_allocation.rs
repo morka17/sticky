@@ -55,13 +55,12 @@ impl BlockMeta {
 
         let starting_line = starting_at / LINE_SIZE;
 
-        for (index, marked) in self.line_mark[starting_line..].iter().enumerate(){
+        for (index, marked) in self.line_mark[starting_line..].iter().enumerate() {
             let abs_index = starting_line + index;
 
             // count unmarked lines
             if !*marked {
-                count +=1 ;
-                
+                count += 1;
                 // if this is the first line in a hole (and not the zeroth line), consider it
                 // conservatively marked and skip to the next line
                 if count == 1 && abs_index > 0 {
@@ -69,9 +68,40 @@ impl BlockMeta {
                 }
 
                 // record the first hole index
+                if start.is_none() {
+                    start = Some(abs_index);
+                }
+
+                // stop is now at the end of this line
+                stop = abs_index + 1;
+            }
+
+            // when reached a marked line or the end of the block, there is a valid hole to work with
+            if count > 0 && (*marked || stop >= LINE_COUNT) {
+                if let Some(start) = start{
+                    let cursor = start * LINE_SIZE;
+                    let limit = stop * LINE_SIZE;
+
+                    return Some((cursor, limit))
+                }
+            }
+
+            // if this line is marked and did'nt return a new cursor/limit pair by now,
+            // reset the hole state
+            if *marked {
+                count = 0;
+                start = None;
             }
         }
 
         None
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn bump_allocate_it_works() {
+        
     }
 }
